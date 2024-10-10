@@ -28,6 +28,7 @@ pip3 install wheel accelerate flash-attn
 
 ```
 # モデル保存用のキャッシュディレクトリの設定を読み込む
+# これをしないと自分のホームディレクトリ化にバカデカいファイルを読み込んでしまって無駄が多い
 source /slc/share/dot.zshrc.slc
 ```
 
@@ -39,7 +40,7 @@ source /slc/share/dot.zshrc.slc
 # プログラムの立ち上げが終わると
 # input>
 # というプロンプトが出てくるので文字列を入力。空行のままEnterすると入力終了（入力が空であればプログラムを閉じる）
-env CUDA_VISIBLE_DEVICES=0 ./sample_interactive.py -m llm-jp-3-1.8b-instruct
+env CUDA_VISIBLE_DEVICES=0 python3 ./sample_interactive.py -m llm-jp-3-1.8b-instruct
 ```
 
 実行例
