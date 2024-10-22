@@ -23,7 +23,8 @@ pip3 install torch --index-url https://download.pytorch.org/whl/cu124
 pip3 install transformers
 
 # その他必要なものもインストール
-pip3 install wheel accelerate flash-attn
+pip3 install wheel
+pip3 install accelerate flash-attn
 ```
 
 ```
