@@ -11,11 +11,21 @@ from argparse import ArgumentParser
 from transformers.utils import logging
 logging.set_verbosity_error() 
 
+downloaded_models = [
+                      'llm-jp-3-1.8b',
+                      'llm-jp-3-1.8b-instruct',
+                      'llm-jp-3-3.7b',
+                      'llm-jp-3-3.7b-instruct',
+                      'llm-jp-3-13b',
+                      'llm-jp-3-13b-instruct',
+                      'llm-jp-4.1-8b-thinking',
+                      'llm-jp-4.1-32b-a3b-thinking',
+                      'llm-jp-4.1-33b-thinking'
+                    ]
 
 def main():
     argparser = ArgumentParser("a simple test script for LLM-jp")
-    argparser.add_argument("-d", "--debug", action='store_true')
-    argparser.add_argument("-m", "--model", choices=['llm-jp-3-1.8b', 'llm-jp-3-1.8b-instruct', 'llm-jp-3-3.7b', 'llm-jp-3-3.7b-instruct', 'llm-jp-3-13b', 'llm-jp-3-13b-instruct'], required=True, help='model variants')
+    argparser.add_argument("-d", "--debug", action='store_true') argparser.add_argument("-m", "--model", choices=downloaded_models, required=True, help='model variants')
     argparser.add_argument("--no-instruct", action='store_true')
     argparser.add_argument("--no-system-prompt", action='store_true')
     argparser.add_argument("--max-tokens", type=int, default=512)
