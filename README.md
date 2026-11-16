@@ -1,6 +1,8 @@
 # Lab4SLC llm-jp チュートリアル
 
-```
+## 1. リポジトリの取得と仮想環境の作成
+
+```bash
 # 作業ディレクトリに移動 (/path/to/dir は好きなところで良い、相対パスでもOK)
 cd /path/to/dir
 
@@ -15,7 +17,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-```
+## 2. ライブラリのインストール
+
+### (A) Transformers 版（通常モデル）を使う場合
+
+```bash
 # Pytorch をインストール (研究室の環境に合わせて CUDA-12.4対応版にする）
 pip3 install torch --index-url https://download.pytorch.org/whl/cu124
 
@@ -27,25 +33,73 @@ pip3 install wheel
 pip3 install accelerate flash-attn
 ```
 
+### (B) GGUF 量子化モデル版（省メモリ・推奨）を使う場合
+
+GPUメモリ（VRAM）の使用量を抑えて動かしたい場合は、`llama-cpp-python` を使って公式の GGUF 量子化モデル（`Q4_K_M`）を実行できます。
+
+```bash
+# 必要な補助パッケージをインストール
+pip3 install huggingface-hub jinja2
+
+# llama-cpp-python (CUDA 12.4対応ビルド済みwheel) をインストール
+pip3 install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 ```
+
+※ Python のバージョン等の都合で上記 wheel が見つからない場合や、最新の `llama.cpp` 機能が必要な場合は、以下のようにソースから CUDA 有効でビルドしてインストールしてください（Ubuntu 22.04 LTS）：
+
+```bash
+CMAKE_ARGS="-DGGML_CUDA=on" pip3 install llama-cpp-python --no-cache-dir
+```
+
+## 3. キャッシュディレクトリの設定
+
+```bash
 # モデル保存用のキャッシュディレクトリの設定を読み込む
-# これをしないと自分のホームディレクトリ化にバカデカいファイルを読み込んでしまって無駄が多い
+# これをしないと自分のホームディレクトリ配下にバカデカいファイルを読み込んでしまって無駄が多い
 source /slc/share/dot.zshrc.slc
 ```
 
-```
-# ChatGPT的な対話を行うデモプログラムを回す
+## 4. デモプログラムの実行
+
+プログラムの立ち上げが終わると `input>` というプロンプトが出てくるので文字列を入力します。空行のまま Enter すると入力終了となり応答が生成されます（何も入力せずに空行のまま Enter するとプログラムを閉じます）。
+
+### (1) GGUF 量子化モデル版（`sample_interactive_gguf.py`）
+
+公式の GGUF 量子化モデル（デフォルトで 4bit 量子化の `Q4_K_M` を使用）を読み込んで対話を行います。
+
+```bash
 # CUDA_VISIBLE_DEVICES=0 は1枚目のGPUだけを使う、というおまじない
-# -m の後はモデルの名前 (https://huggingface.co/llm-jp/llm-jp-3-13b 参照、但し 172b はメモリに載らないと思うので落としてない)
-# "-instruct" がついたモデルを使う想定
-# プログラムの立ち上げが終わると
-# input>
-# というプロンプトが出てくるので文字列を入力。空行のままEnterすると入力終了（入力が空であればプログラムを閉じる）
+# -m の後はモデルの名前:
+#   llm-jp-4.1-8b-thinking-gguf      (約5.5GB, 1枚のGPUでも余裕をもって動作)
+#   llm-jp-4.1-32b-a3b-thinking-gguf (MoEモデル, 推論が高速)
+#   llm-jp-4.1-33b-thinking-gguf     (Dense 33Bモデル)
+env CUDA_VISIBLE_DEVICES=0 python3 ./sample_interactive_gguf.py -m llm-jp-4.1-8b-thinking-gguf
+```
+
+**GPUメモリが足りない場合のオプション：**
+- `-ngl` (`--n-gpu-layers`)：GPU に載せるレイヤー数を指定します（デフォルトは `-1` で全レイヤーを GPU に配置）。32B / 33B モデルなどで GPU メモリが不足する場合は `-ngl 20` のように指定すると、残りのレイヤーを CPU メモリ側で処理できます。
+- `-c` (`--ctx-size`)：コンテキスト長を指定します（デフォルトは `4096`）。
+- `--reasoning-effort`：思考の深さを `low` / `medium` / `high` から指定できます（デフォルトは `medium`）。
+
+```bash
+# 例: 32b-a3b モデルで一部レイヤーのみ GPU にオフロードして動かす場合
+env CUDA_VISIBLE_DEVICES=0 python3 ./sample_interactive_gguf.py -m llm-jp-4.1-32b-a3b-thinking-gguf -ngl 20
+```
+
+### (2) Transformers 版（`sample_interactive.py`）
+
+非量子化モデルを Hugging Face Transformers で動かす場合のコマンドです。
+
+```bash
+# -m の後はモデルの名前 (https://huggingface.co/llm-jp 参照、但し 172b はメモリに載らないと思うので落としてない)
+# 対話用途では "-instruct" または "-thinking" がついたモデルを使う想定:
+#   llm-jp-3-1.8b-instruct / llm-jp-3-3.7b-instruct / llm-jp-3-13b-instruct
+#   llm-jp-4.1-8b-thinking / llm-jp-4.1-32b-a3b-thinking / llm-jp-4.1-33b-thinking
 env CUDA_VISIBLE_DEVICES=0 python3 ./sample_interactive.py -m llm-jp-3-1.8b-instruct
 ```
 
 実行例
-```
+```text
 Loading checkpoint shards: 100%|████████████████████████████████████████████████████████████████| 6/6 [00:05<00:00,  1.01it/s]
 input> ドラえもんの兄について教えてください
 input> 
